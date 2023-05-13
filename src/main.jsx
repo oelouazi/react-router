@@ -1,4 +1,4 @@
-import React from 'react'
+import React, {useEffect, useState} from 'react'
 import ReactDOM from 'react-dom/client'
 import Contact, {
     loader as contactLoader,
@@ -14,6 +14,42 @@ import './index.css'
 import EditContact,{action as editAction,} from "./routes/edit";
 import { action as destroyAction } from "./routes/destroy";
 import Index from "./routes/index";
+import mqtt from "precompiled-mqtt";
+
+
+const client = mqtt.connect('wss://random.pigne.org');
+const DataReceiver = () => {
+    const [data, setData] = useState([]);
+
+    useEffect(() => {
+        const handleData = (topic, value) => {
+            let parsedData;
+            try {
+                parsedData = JSON.parse(value.toString(), (key, value) => {
+                    // Handle any special JSON parsing rules here
+                    return value;
+                });
+            } catch (e) {
+                console.error(e);
+                return;
+            }
+            setData((prevData) => [...prevData, parsedData]);
+        };
+
+        client.on('connect', () => {
+            console.log('on est connectés');
+            client.subscribe('value/#');
+        });
+
+        client.on('message', handleData);
+
+        return () => {
+            client.removeListener('message', handleData);
+        };
+    }, []);
+    console.log(data)
+    return <Index data={data} />;
+};
 
 const router = createBrowserRouter([
     {
@@ -65,3 +101,4 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </React.StrictMode>
 );
 
+export default DataReceiver;

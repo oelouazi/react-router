@@ -1,23 +1,33 @@
-import { Outlet,NavLink, Link ,useLoaderData,Form,redirect,useNavigation, useSubmit,} from "react-router-dom";
+import {Outlet, NavLink, Link, useLoaderData, Form, redirect, useNavigation, useSubmit, Route,} from "react-router-dom";
 import { getContacts , createContact } from "../contacts";
-import { useEffect } from "react";
+import React, {useEffect, useState} from "react";
+import mqtt from "precompiled-mqtt";
+import Index from "./index.jsx";
+import DataReceiver from "../main.jsx";
+
+
+
 export async function action() {
     const contact = await createContact();
     return redirect(`/contacts/${contact.id}/edit`);
 }
 
-export async function loader({ request }) {
+export async function loader({ request , data }) {
     const url = new URL(request.url);
     const q = url.searchParams.get("q");
     const contacts = await getContacts(q);
-    return { contacts, q };
+    return { contacts, q , data };
 }
 
 export default function Root() {
-    const { contacts , q } = useLoaderData();
+    const { contacts , q , data } = useLoaderData();
+
+    useEffect(()=>{
+        console.log("daaataaaaa : ",DataReceiver)
+    },[data])
+    console.log(data)
     const navigation = useNavigation();
     const submit = useSubmit();
-
     const searching =
         navigation.location &&
         new URLSearchParams(navigation.location.search).has(
@@ -58,9 +68,6 @@ export default function Root() {
                             aria-live="polite"
                         ></div>
                     </Form>
-                    <form method="post">
-                        <button type="submit">New</button>
-                    </form>
                     <Form method="post">
                         <button type="submit">New</button>
                     </Form>
@@ -105,8 +112,10 @@ export default function Root() {
                     navigation.state === "loading" ? "loading" : ""
                 }
             >
+                <DataReceiver data={data} />
                 <Outlet />
             </div>
         </>
+
     );
 }
